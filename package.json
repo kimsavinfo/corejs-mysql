@@ -1,0 +1,21 @@
+{
+    "name": "corejs-mysql",
+    "version": "1.0.0",
+    "scripts": {
+        "test": "NODE_ENV=development mocha unittests --bail --exit"
+    },
+    "dependencies": {
+        "dotenv": "^16.4.7",
+        "dotenv-cli": "^7.4.4",
+        "mysql2": "^3.11.5"
+    },
+    "devDependencies": {
+        "mocha": "^11.0.1"
+    },
+    "author": "Kim SAVAROCHE",
+    "license": "UNLICENSED",
+    "description": "",
+    "keywords": [],
+    "private": true,
+    "type": "module"
+}
