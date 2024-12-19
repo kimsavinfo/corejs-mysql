@@ -9,9 +9,9 @@
     "type": "module",
     "main": "main.js",
     "scripts": {
-        
+    },
+    "dependencies": {
     },
     "devDependencies": {
-        
     }
 }
