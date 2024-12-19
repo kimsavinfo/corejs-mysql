@@ -1,0 +1,17 @@
+{
+    "name": "corejs-mysql",
+    "version": "1.0.0",
+    "author": "Kim SAVAROCHE",
+    "license": "UNLICENSED",
+    "description": "",
+    "keywords": [],
+    "private": true,
+    "type": "module",
+    "main": "main.js",
+    "scripts": {
+        
+    },
+    "devDependencies": {
+        
+    }
+}
