@@ -4,9 +4,11 @@ import mysql from "mysql2/promise";
 
 import MySQLTools from "./mysql_tools.js";
 import MySQLEnums from "./mysql_enums.js";
+import MySQLLogger from "./mysql_logger.js";
 
 export default class MySQLDatabase {
     static instance;
+    static #logger = MySQLLogger;
     static #tablesPath = `${process.cwd()}`;
     static #tables = {};
 
@@ -23,7 +25,7 @@ export default class MySQLDatabase {
                 queueLimit: 0
             });
             MySQLDatabase.instance = this;
-            Object.freeze(MySQLDatabase.instance); // Freeze the singleton instance
+            Object.freeze(MySQLDatabase.instance);
         }
         return MySQLDatabase.instance;
     }
@@ -41,16 +43,16 @@ export default class MySQLDatabase {
 
     // #region QUERY
 
-    static async query({ inquiry, valuesToEscape=[], debug=(process.env.DB_DEBUG==="TRUE") }) {
-        if(debug) {
-            this.#logQuery({ inquiry: inquiry, valuesToEscape: valuesToEscape })
-        }
+    static async query({ inquiry, valuesToEscape=[] }) {
+        
 
         let output = null;
         try {
             const instance = MySQLDatabase.getInstance();
             const result = await instance.pool.query(inquiry, valuesToEscape);
             output = JSON.parse(JSON.stringify(result));
+
+            await this.#logQuery({ inquiry: inquiry, valuesToEscape: valuesToEscape, output: output })
         } catch (error) {
             console.error('DATABASE INQUIRY error:', error);
         }
@@ -58,24 +60,38 @@ export default class MySQLDatabase {
         return output;
     }
 
-    static #logQuery({ inquiry, valuesToEscape=[] }) {
-        console.log(`=== DATABASE INQUIRY ===`);
-
-        let inquiryElements = inquiry.split("?");
-        let logInquiry = "";
-        const valuesToEscapeLength = valuesToEscape.length;
-        for(let iElement = 0; iElement < inquiryElements.length; ++iElement) {
-            logInquiry += `${inquiryElements[iElement]} `;
-            if(iElement < valuesToEscapeLength) {
-                if(typeof valuesToEscape[iElement] === "string") {
-                    logInquiry += `"${valuesToEscape[iElement]}"`;
-                } else {
-                    logInquiry += valuesToEscape[iElement];
+    static async #logQuery({ inquiry, valuesToEscape=[], output=[], debug=(process.env.DB_DEBUG==="TRUE") }) {
+        if( debug || !inquiry.includes("SELECT") ) {
+            let inquiryElements = inquiry.split("?");
+            let logInquiry = "";
+            const valuesToEscapeLength = valuesToEscape.length;
+            for(let iElement = 0; iElement < inquiryElements.length; ++iElement) {
+                logInquiry += `${inquiryElements[iElement]} `;
+                if(iElement < valuesToEscapeLength) {
+                    if(typeof valuesToEscape[iElement] === "string") {
+                        logInquiry += `"${valuesToEscape[iElement]}"`;
+                    } else {
+                        logInquiry += valuesToEscape[iElement];
+                    }
                 }
             }
-        }
 
-        console.log(new Date(), logInquiry);
+            if( output.length > 1 ) {
+                if(output[0].insertId) {
+                    logInquiry += `\n=> insertId: ${output[0].insertId}`;
+                } /* else if(output[0].affectedRows) {
+                    logInquiry += `\n=> affectedRows: ${output[0].affectedRows}`;
+                } */
+            }
+
+            if(debug) {
+                console.log(`=== DATABASE INQUIRY ===`); 
+                console.log(logInquiry);
+            }
+            if(!inquiry.includes("SELECT")) {
+                this.#logger.write({ text: logInquiry });
+            }
+        }
     }
 
     // #endregion QUERY
@@ -124,7 +140,7 @@ export default class MySQLDatabase {
         
         if( result[0].length === 0 ) {
             await this.query({ inquiry: table.getCreateTableQuery() });
-            
+
         } else {
             const fields = await this.query({ inquiry: 
                 `SELECT COLUMN_NAME, DATA_TYPE 
