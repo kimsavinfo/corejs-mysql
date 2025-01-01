@@ -52,13 +52,19 @@ export default class MySQLTools {
             valuesToEscape: []
         };
 
-        // if( MySQLEnums.SPECIAL_SELECT_KEYS.includes(inputKey) ) {
-        //     output.lines = "";
+        for (const [inputKey, inputValue] of Object.entries(inputs)) {
+            if( MySQLEnums.SPECIAL_SELECT_KEYS.includes(inputKey) ) {
+                output.lines = [];
 
-        //     if( inputs.hasOwnProperty('fields_to_retrieve') ) {
+                if( inputKey === 'count' ) {
+                    const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputValue });
+                    const field = this.extractTableField({ table: table, inputString: inputValue });
+                    output.lines.push(`SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`)
+                }
 
-        //     }
-        // }
+                break;
+            }
+        }
 
         return output;
     }
@@ -69,7 +75,8 @@ export default class MySQLTools {
 
     /*
         inputString:
-            tables_joins = leftTable1.leftField-rightTable1.rightField,leftTable2.leftField-rightTable2.rightField
+            tables_joins = left_table1.left_field-right_table1.right_field
+            tables_joins = left_table1.left_field-right_table1.right_field,left_table2.left_field-right_table2.right_field
     */
     static getJoinsLines({ defaultTableKey, tables, inputString }) {
         let output = [];
@@ -111,11 +118,12 @@ export default class MySQLTools {
         output.logicalOperator = this.extractLogicalOperator({ inputString })
         output.comparisonOperator = this.extractComparisonOperator({ table: table, field: output.field, inputString: inputString });
 
-        output.valueToEscape = inputValue;
-        if( typeof inputValue === 'string' && inputValue.toLowerCase() === "is_null" ) {
-            output.valueToEscape = "IS NULL";
-        } else if( typeof inputValue === 'string' && inputValue.toLowerCase() === "is_not_null" ) {
-            output.valueToEscape = "IS NOT NULL";
+        if( typeof inputValue === 'string' && inputValue.toLowerCase() === "isnull" ) {
+            output.comparisonOperator = "IS NULL";
+        } else if( typeof inputValue === 'string' && inputValue.toLowerCase() === "isnotnull" ) {
+            output.comparisonOperator = "IS NOT NULL";
+        } else {
+            output.valueToEscape = inputValue;
         }
 
         return output;
@@ -123,9 +131,9 @@ export default class MySQLTools {
 
     // /*
     //     inputString:
-    //         group_by = myTable.myField
-    //         group_by = myField
-    //         group_by = and_myField_like
+    //         group_by = my_table.my_field
+    //         group_by = my_field
+    //         group_by = and_my_field_like
     // */
     // static getGroupQuery({ defaultTableKey, tables, inputString }) {
     //     const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputString });
@@ -135,8 +143,8 @@ export default class MySQLTools {
 
     /*
         inputString:
-            sort = myField1_ASC,myField2_DESC
-            sort = myTable1.myField1_ASC,myTable1.myField2_DESC
+            sort = my_field1_ASC,my_field2_DESC
+            sort = my_table1.my_field1_ASC,my_table1.my_field2_DESC
     */
     // static getSortString({ defaultTableKey, tables, inputString }) {
     //     let output = `ORDER BY `;
@@ -160,32 +168,38 @@ export default class MySQLTools {
     //     return output;
     // }
 
-    // /*
-    //     elements_per_page = 10
-    //     page = 3
-    // */
-    // static getSkipQuery({ elementsPerPage, page }) {
-    //     const countElements = parseInt(elementsPerPage) || 20;
-    //     const countPage = parseInt(page) || 20;
-    //     return countPage * countElements;
-    // }
+    /*
+        inputs:
+            elements_per_page = 10
+            page = 3
+        outputs:
+            30
+    */
+    static getSkipNumber({ elementsPerPage, page }) {
+        const countElements = parseInt(elementsPerPage) || 20;
+        const countPage = parseInt(page) || 0;
+        return countPage * countElements;
+    }
 
-    // /*
-    //     elements_per_page = 10
-    // */
-    // static getLimitQuery({ elementsPerPage }) {
-    //     return parseInt(elementsPerPage) || 20;
-    // }
+    /*
+        inputs:
+            elements_per_page = 10
+        outputs:
+            10
+    */
+    static getLimitNumber({ elementsPerPage }) {
+        return parseInt(elementsPerPage) || 20;
+    }
 
     // // ====================================================
 
     /*
         inputString:
-            myTable.myField
-            myField
-            and_myField_like
+            my_table.my_field
+            my_field
+            and_my_field_like
         output:
-            myTable = { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
+            my_table = { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
     */
     static extractTable({ defaultTableKey, tables, inputString }) {
         let output = tables[defaultTableKey];
@@ -200,12 +214,12 @@ export default class MySQLTools {
 
     /*
         inputString: 
-            myTable.myField
-            myField
-            and_myField_like
-            myTable.and_myField_like
+            my_table.my_field
+            my_field
+            and_my_field_like
+            my_table.and_my_field_like
         output:
-            myField
+            my_field
     */
     static extractTableField({ table, inputString }) {
         let output = table.primaryKey;
@@ -213,9 +227,13 @@ export default class MySQLTools {
         const elements = inputString.split('.');
         const element = elements.length === 1 ? elements[0] : elements[1];
         if( element.includes("_") ) {
-            const subElements = element.split("_");
-            if( table.schema.hasOwnProperty( subElements[1] ) ) {
-                output = subElements[1];
+            let subElements = element.split("_");
+            subElements.shift();
+            subElements.pop();
+            const field = subElements.join("_");
+
+            if( table.schema.hasOwnProperty( field ) ) {
+                output = field;
             }
 
         } else if( table.schema.hasOwnProperty(element) ) {
@@ -228,8 +246,8 @@ export default class MySQLTools {
 
     /*
         inputString: 
-            and_myField_like
-            or_myField_eq
+            and_my_field_like
+            or_my_field_eq
         output:
             and
             or
@@ -247,8 +265,8 @@ export default class MySQLTools {
 
     /*
         inputString: 
-            and_myField_like
-            or_myField_eq
+            and_my_field_like
+            or_my_field_eq
         output:
             like
             =
@@ -257,9 +275,9 @@ export default class MySQLTools {
         let output = "=";
 
         const elements = inputString.split("_");
-        if( table.schema.hasOwnProperty(field) && table.schema[field].hasOwnProperty("dataType") && elements.length === 2 ) {
+        if( table.schema.hasOwnProperty(field) && table.schema[field].hasOwnProperty("dataType") && elements.length >= 3 ) {
             let validator = [];
-            switch( table.schema[schema].dataType ) {
+            switch( table.schema[field].dataType ) {
                 case MySQLEnums.DataTypes.VARCHAR:
                 case MySQLEnums.DataTypes.TEXT:
                 case MySQLEnums.DataTypes.MEDIUMTEXT:
@@ -289,37 +307,38 @@ export default class MySQLTools {
                     break;
             }
 
-            if( validator.includes(elements[2]) ) {
-                switch( elements[2] ) {
+            let comparator = elements[elements.length - 1];
+            if( validator.includes(comparator) ) {
+                switch( comparator ) {
                     case "like":
-                        output = ` LIKE `;
+                        output = `LIKE`;
                         break;
                     case "nlike":
-                        output = ` NOT LIKE `;
+                        output = `NOT LIKE`;
                         break;
                     case "eq":
-                        output = ` = `;
+                        output = `=`;
                         break;
                     case "ne":
-                        output = ` != `;
+                        output = `!=`;
                         break;
                     case "gt":
-                        output = ` > `;
+                        output = `>`;
                         break;
                     case "gte":
-                        output = ` >= `;
+                        output = `>=`;
                         break;
                     case "lt":
-                        output = ` < `;
+                        output = `<`;
                         break;
                     case "lte":
-                        output = ` <= `;
+                        output = `<=`;
                         break;
                     case "in":
-                        output = ` IN `;
+                        output = `IN`;
                         break;
                     case "nin":
-                        output = ` NOT IN `;
+                        output = `NOT IN`;
                         break;
                     default:
                         output = '';
@@ -328,7 +347,7 @@ export default class MySQLTools {
             }
 
         } else {
-            console.error(`MySQLTools extractComparisonOperator - ${table.label}.${field} not found in schema`);
+            console.error(`MySQLTools extractComparisonOperator - ${inputString} -> ${table.label}.${field} not found in schema`);
         }
 
         return output;

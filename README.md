@@ -7,6 +7,8 @@ npm install
 npm test
 ```
 
+TODO: use dockers for db 5.7.x and 8.x
+
 ## Database: MySQL  8.x or 5.7.x
 
 ```

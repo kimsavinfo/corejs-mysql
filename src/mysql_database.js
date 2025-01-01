@@ -200,8 +200,39 @@ export default class MySQLDatabase {
 
 
 
+    /*
+        inputs
+            table: { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
+            idValue: 1
+    */
+    static async readRow({ table, idValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
+        const rows = await this.listRows({
+            inputs: {
+                from: table.label,
+                [`and_${table.primaryKey}_eq`]: idValue,
+                elements_per_page: 1,
+                page: 0,
+            },
+            debug: debug
+        });
 
+        return rows.length === 1 ? rows[0] : {};
+    }
 
+    /*
+        inputs
+            rf listRows inputs
+        outputs
+            -1 by default
+            an int
+    */
+    static async countRows({ inputs, debug=(process.env.DB_DEBUG==="TRUE") }) {
+        const rows = await this.listRows({
+            inputs: inputs,
+            debug: debug
+        });
+        return rows.length === 1 ? rows[0].count : -1;
+    }
 
     static async listRows({ inputs, debug=(process.env.DB_DEBUG==="TRUE") }) {
         let output = [];
@@ -243,16 +274,26 @@ export default class MySQLDatabase {
                         if(!isFirstCondition) {
                             whereString += ` ${whereElements.logicalOperator}`;
                         }
-                        whereString += ` \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator} ? `
-                        valuesToEscape.push(whereElements.valueToEscape);
+                        whereString += ` \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator}`;
+
+                        if( whereElements.valueToEscape ) {
+                            whereString += ` ? `;
+                            valuesToEscape.push(whereElements.valueToEscape);
+                        }
                     }
                 }
-                query += `\n${whereString}`;
+                if( whereString.length > 0 ) {
+                    query += `\n${whereString}`;
+                }
                 
                 // let sortQuery = "";
                 // let groupQuery = "";
-                // let skipQuery = 0;
-                // let limitQuery = 20;
+                
+                if( !inputs.hasOwnProperty("count") ) {
+                    const skip = MySQLTools.getSkipNumber({ elementsPerPage: inputs["elements_per_page"], page: inputs["page"] });
+                    const limit = MySQLTools.getLimitNumber({ elementsPerPage: inputs["elements_per_page"] });
+                    query += `\nLIMIT ${skip}, ${limit}`;
+                }
 
                 const result = await MySQLDatabase.query({ inquiry: query, valuesToEscape: valuesToEscape, debug: debug })
                 output = result[0];
