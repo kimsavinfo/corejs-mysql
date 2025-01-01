@@ -62,22 +62,35 @@ describe('ROWS', function () {
     })
 
     it('fields_to_retrieve', async function () {
-        const readOuput = await MySQLDatabase.listRows({ inputs: {
+        const rows = await MySQLDatabase.listRows({ inputs: {
             from: ProductTable.label,
             elements_per_page: 1,
             page: 0,
             fields_to_retrieve: `id,${ProductTable.label}.label`
         } });
-        
-        const fields = Object.keys(readOuput[0]);
+        const fields = Object.keys(rows[0]);
+
         assert.deepEqual( 
             [ fields.length, fields.includes(`${ProductTable.label}.id`), fields.includes(`${ProductTable.label}.label`) ],
             [ 2, true, true ]
         );
     })
 
-    // TODO: fields_to_retrieve
-    // TODO: SORT
+    it('sort', async function () {
+        const rows = await MySQLDatabase.listRows({ inputs: {
+            from: ProductTable.label,
+            elements_per_page: 1,
+            page: 0,
+            sort: "price_DESC"
+        } });
+        const row = rows[0];
+
+        assert.deepEqual( 
+            [ row.id ],
+            [ DUMMIES_COUNT+1 ]
+        );
+    })
+
     // TODO: GROUP BY
     // TODO: DISTINCT
 })

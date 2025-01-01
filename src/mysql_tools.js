@@ -46,15 +46,11 @@ export default class MySQLTools {
 
     // ====================================================
 
-    static getSelectElements({ defaultTableKey, tables, inputs }) {
-        let output = {
-            lines: ["SELECT *"],
-            valuesToEscape: []
-        };
+    static getSelectString({ defaultTableKey, tables, inputs }) {
+        let output = "SELECT *";
 
         for (const [inputKey, inputValue] of Object.entries(inputs)) {
             if( MySQLEnums.SPECIAL_SELECT_KEYS.includes(inputKey) ) {
-                output.lines = [];
 
                 if( inputKey === 'count' ) {
                     /*
@@ -65,7 +61,7 @@ export default class MySQLTools {
                     */
                     const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputValue });
                     const field = this.extractTableField({ table: table, inputString: inputValue });
-                    output.lines.push(`SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`);
+                    output = `SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`;
 
                 } else if( inputKey === 'fields_to_retrieve' ) {
                     /*
@@ -75,15 +71,17 @@ export default class MySQLTools {
                             my_table.my_field1,my_table.my_field2
                             my_field1,my_field2
                     */
-                    let line = "";
+                    let subLines = [];
                     const elements = inputValue.split(",");
                     for( const element of elements ) {
                         const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: element });
                         const field = this.extractTableField({ table: table, inputString: element });
-
-                        line = output.lines.length === 0 ? "SELECT " : ", ";
-                        line +=  ` \`${table.label}\`.\`${field}\` AS "${table.label}.${field}" `;
-                        output.lines.push(line);
+                        
+                        subLines.push(`\`${table.label}\`.\`${field}\` AS "${table.label}.${field}"`);
+                    }
+                    if( subLines.length > 0 ) {
+                        subLines[0] = `SELECT ${subLines[0]}`;
+                        output = subLines.join(" ,");
                     }
                 }
 
@@ -154,44 +152,81 @@ export default class MySQLTools {
         return output;
     }
 
-    // /*
-    //     inputString:
-    //         group_by = my_table.my_field
-    //         group_by = my_field
-    //         group_by = and_my_field_like
-    // */
-    // static getGroupQuery({ defaultTableKey, tables, inputString }) {
-    //     const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputString });
-    //     const tableInput = this.extractTableInput({ table: leftTable, inputString: inputString });
-    //     return `GROUP BY \`${table.label}\`.\`${tableInput}\``;
-    // }
+    /*
+        inputString:
+            group_by = my_table.my_field
+            group_by = my_field
+    */
+    static getGroupString({ defaultTableKey, tables, inputs }) {
+        let output = ``;
+
+        const isDefaultCase = this.isDefaultGroupCase({ inputs: inputs });
+        if( isDefaultCase ) {
+            const table = tables[defaultTableKey];
+            output = `GROUP BY \`${table.label}\`.\`${table.primaryKey}\``;
+        
+        } else if( inputs["group_by"] ) {
+            const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputs["group_by"] });
+            const field = this.extractTableField({ table: table, inputString: inputs["group_by"] });
+            output = `GROUP BY \`${table.label}\`.\`${field}\``;
+        }
+
+        return output;
+    }
 
     /*
         inputString:
+            sort = my_field_DESC
             sort = my_field1_ASC,my_field2_DESC
             sort = my_table1.my_field1_ASC,my_table1.my_field2_DESC
     */
-    // static getSortString({ defaultTableKey, tables, inputString }) {
-    //     let output = `ORDER BY `;
+    static getSortString({ defaultTableKey, tables, inputs }) {
+        let output = ``;
 
-    //     let orderByArray = [];
-    //     const sortElements = inputString.split(",");
-    //     for(const element of sortElements) {
-    //         const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputString });
-    //         const tableInput = this.extractTableInput({ table: leftTable, inputString: inputString });
-    //         const inputElements = tableInput.split('_');
+        const isDefaultCase = this.isDefaultSortCase({ inputs: inputs });
+        if( isDefaultCase ) {
+            const table = tables[defaultTableKey];
+            output = `ORDER BY \`${table.label}\`.\`${table.primaryKey}\` ASC`;
+        
+        } else if( inputs["sort"] ) {
 
-    //         const field = table.hasOwnProperty(inputElements[0]) ? inputElements[0] : table.primaryKey;
-    //         let direction = inputElements[1].toUpperCase();
-    //         if( !MySQLEnums.SORT_DIRECTIONS.includes(direction) ) {
-    //             direction = MySQLEnums.SORT_DIRECTIONS[0];
-    //         }
-    //         orderByArray.push(`\`${table.label}\`.\`${field}\` ${direction}`)
-    //     }
-    //     output += orderByArray.join(" , ");
+            if(inputs["sort"] === "RAND") {
+                output = `ORDER BY RAND()`;
+            
+            } else {
+                let orderByArray = [];
+                const sortElements = inputs["sort"].split(",");
+                let table;
+                for(const element of sortElements) {
+                    table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: element });
+                    
+                    const pointElements = element.split(".");
+                    const lastPointElement = pointElements[ pointElements.length-1 ];
+                    const underscoreElements = lastPointElement.split("_");
+                    
+                    const lastUnderscoreElement = (underscoreElements.pop()).toUpperCase();
+                    let direction = "ASC";
+                    if( MySQLEnums.SORT_DIRECTIONS.includes(lastUnderscoreElement) ) {
+                        direction = lastUnderscoreElement;
+                    }
 
-    //     return output;
-    // }
+                    let field = table.schema.primaryKey;
+                    const fieldToTest = underscoreElements.join("_");
+                    if( table.schema.hasOwnProperty( fieldToTest ) ) {
+                        field = fieldToTest;
+                    }
+
+                    orderByArray.push(`\`${table.label}\`.\`${field}\` ${direction}`)
+                }
+                if(orderByArray.length > 0) {
+                    orderByArray[0] = `ORDER BY ${orderByArray[0]}`;
+                    output += orderByArray.join(" , ");
+                }
+            }
+        }
+
+        return output;
+    }
 
     /*
         inputs:
@@ -376,5 +411,19 @@ export default class MySQLTools {
         }
 
         return output;
+    }
+
+    static isDefaultSortCase({ inputs }) {
+        return !inputs.hasOwnProperty("sort")
+            && !inputs.hasOwnProperty("fields_to_retrieve")
+            && !inputs.hasOwnProperty("tables_joins")
+            && !inputs.hasOwnProperty("count")
+    }
+
+    static isDefaultGroupCase({ inputs }) {
+        return !inputs.hasOwnProperty("group_by")
+            && !inputs.hasOwnProperty("fields_to_retrieve")
+            && !inputs.hasOwnProperty("tables_joins")
+            && !inputs.hasOwnProperty("count")
     }
 }

@@ -243,9 +243,7 @@ export default class MySQLDatabase {
                 let query = "";
                 let valuesToEscape = [];
 
-                const selectElements = MySQLTools.getSelectElements({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
-                query += selectElements.lines.join("\n");
-                valuesToEscape.push(...selectElements.valuesToEscape);
+                query = MySQLTools.getSelectString({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
 
                 query += `\n${MySQLTools.getFromString({ defaultTableKey: inputs.from, tables: this.#tables })}`;
 
@@ -285,9 +283,16 @@ export default class MySQLDatabase {
                 if( whereString.length > 0 ) {
                     query += `\n${whereString}`;
                 }
+
+                const groupString = MySQLTools.getGroupString({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
+                if( groupString.length > 0 ) {
+                    query += `\n${groupString}`;
+                }
                 
-                // let sortQuery = "";
-                // let groupQuery = "";
+                const sortString = MySQLTools.getSortString({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
+                if( sortString.length > 0 ) {
+                    query += `\n${sortString}`;
+                }
                 
                 if( !inputs.hasOwnProperty("count") ) {
                     const skip = MySQLTools.getSkipNumber({ elementsPerPage: inputs["elements_per_page"], page: inputs["page"] });
