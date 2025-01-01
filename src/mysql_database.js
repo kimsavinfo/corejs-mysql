@@ -174,6 +174,28 @@ export default class MySQLDatabase {
         }
     }
 
+    static async loadTables({ lazy=true }) {
+        if(!lazy) {
+            this.#tables = {};
+        }
+
+        if( Object.keys(this.#tables).length === 0 ) {
+            const tablesFilesPaths = MySQLTools.getTablesFilesPaths({ inputPath: this.#tablesPath });
+            for(const tableFilePath of tablesFilesPaths) {
+                try {
+                    const table = (await import(tableFilePath)).default;
+                    if( table.label?.length > 0 ) {
+                        this.#tables[table.label] = table;
+                        console.log(`DATABASE TABLE ${table.label} loaded`);
+                    }
+
+                } catch(error) {
+                    console.error(`DATABASE LOAD TABLE ${table.label}`, error);
+                }
+            }
+        }
+    }
+
     // #endregion TABLES
 
     // #region ROWS CRUD
@@ -187,29 +209,28 @@ export default class MySQLDatabase {
             const valuesToEscape = table.getValuesToEscapte({ inputs: inputs });
             const response = await this.query({ inquiry: query, valuesToEscape: valuesToEscape, debug: debug });
             output[table.primaryKey] = response[0].insertId;
+
             if(debug) {
-                console.log(`DATABASE ${table.label} ROW CREATED: ${response[0].insertId}`);
+                console.log(`DATABASE CREATE ROW ${table.label}.${table.primaryKey} ${response[0].insertId}`);
             }
         } catch(error) {
-            console.error(`DATABASE CREATE ${table.label} ROW`, inputs, error);
+            console.error(`DATABASE CREATE ROW ${table.label}`, inputs, error);
             output = { error: error.sqlMessage };
         }
 
         return output;
     }
 
-
-
     /*
         inputs
             table: { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
-            idValue: 1
+            primaryValue: 1
     */
-    static async readRow({ table, idValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
+    static async readRow({ table, primaryValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
         const rows = await this.listRows({
             inputs: {
                 from: table.label,
-                [`and_${table.primaryKey}_eq`]: idValue,
+                [`and_${table.primaryKey}_eq`]: primaryValue,
                 elements_per_page: 1,
                 page: 0,
             },
@@ -312,26 +333,32 @@ export default class MySQLDatabase {
         return output;
     }
 
-    static async loadTables({ lazy=true }) {
-        if(!lazy) {
-            this.#tables = {};
-        }
+    /*
+        inputs
+            table: { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
+            primaryValue: 1
+            inputs: { state: "deleted" }
+    */
+    static async updateRow({ table, primaryValue, inputs, debug=(process.env.DB_DEBUG==="TRUE") }) {
+        let output = { affectedRows: -1 };
 
-        if( Object.keys(this.#tables).length === 0 ) {
-            const tablesFilesPaths = MySQLTools.getTablesFilesPaths({ inputPath: this.#tablesPath });
-            for(const tableFilePath of tablesFilesPaths) {
-                try {
-                    const table = (await import(tableFilePath)).default;
-                    if( table.label?.length > 0 ) {
-                        this.#tables[table.label] = table;
-                        console.log(`DATABASE TABLE ${table.label} loaded`);
-                    }
+        await this.loadTables({ lazy:true });
+        try {
+            const query = table.getUpdateRowQuery({ primaryValue: primaryValue, inputs: inputs });
+            let valuesToEscape = table.getValuesToEscapte({ inputs: inputs });
+            valuesToEscape.push(primaryValue);
+            const response = await this.query({ inquiry: query, valuesToEscape: valuesToEscape, debug: debug });
+            output.affectedRows = response[0].affectedRows;
 
-                } catch(error) {
-                    console.error(`DATABASE LOAD TABLE ${table.label}`, error);
-                }
+            if(debug) {
+                console.log(`DATABASE UPDATE ROW ${table.label}.${table.primaryKey} ${primaryValue} with`, inputs);
             }
+        } catch(error) {
+            console.error(`DATABASE UPDATE ROW ${table.label}.${table.primaryKey} ${primaryValue} with`, inputs, error);
+            output = { error: error.sqlMessage };
         }
+
+        return output;
     }
 
     // #endregion ROWS CRUD

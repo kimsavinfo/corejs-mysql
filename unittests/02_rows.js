@@ -12,7 +12,7 @@ describe('ROWS', function () {
             price: 73.75
         } });
 
-        const readOutput = await MySQLDatabase.readRow({ table: ProductTable, idValue: rowOutput[ProductTable.primaryKey] })
+        const readOutput = await MySQLDatabase.readRow({ table: ProductTable, primaryValue: rowOutput[ProductTable.primaryKey] })
         assert.deepEqual( 
             [ rowOutput[ProductTable.primaryKey] !== null, readOutput[ProductTable.primaryKey] ],
             [ true, rowOutput[ProductTable.primaryKey] ]
@@ -88,6 +88,24 @@ describe('ROWS', function () {
         assert.deepEqual( 
             [ row.id ],
             [ DUMMIES_COUNT+1 ]
+        );
+    })
+
+    it('Update with dates', async function () {
+        const date = new Date();
+        date.setFullYear( date.getFullYear() + 1 );
+        const dateFormatted = date.valueOf();
+
+        await MySQLDatabase.updateRow({ table: ProductTable, primaryValue: 1, 
+            inputs: {
+                updated: dateFormatted
+            }
+        });
+
+        const row = await MySQLDatabase.readRow({ table: ProductTable, primaryValue: 1 })
+        assert.deepEqual( 
+            [ row.updated ],
+            [ dateFormatted ]
         );
     })
 

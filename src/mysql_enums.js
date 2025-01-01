@@ -12,8 +12,7 @@ export default class MySQLEnums {
         INT_UNSIGNED:           "INT UNSIGNED",             // 4                0                   4294967295
         BIGINT_UNSIGNED:        "BIGINT UNSIGNED",          // 8                0                   2^64-1
         DOUBLE:                 "DOUBLE",
-        TIMESTAMP:              "TIMESTAMP",
-        // DATETIME:               "DATETIME",
+        UNIX_TIMESTAMP:         "BIGINT UNSIGNED",          // the number of milliseconds since January 1, 1970, UTC
         ENUM:                   "ENUM",
         VARCHAR:                "VARCHAR",
         TEXT:                   "TEXT",
@@ -34,6 +33,7 @@ export default class MySQLEnums {
         this.DataTypes.BIGINT_UNSIGNED,
         this.DataTypes.DOUBLE,
         this.DataTypes.BOOLEAN,
+        this.DataTypes.UNIX_TIMESTAMP
     ];
     static Texts = [
         this.DataTypes.VARCHAR,

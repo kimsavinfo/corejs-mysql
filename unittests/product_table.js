@@ -13,8 +13,8 @@ export default class ProductTable extends MySQLTable {
         description:            { dataType: MySQLEnums.DataTypes.TEXT, nullable: true },
         price:                  { dataType: MySQLEnums.DataTypes.DOUBLE, default: 0.01 },
         
-        updated:                { dataType: MySQLEnums.DataTypes.TIMESTAMP, nullable: false, default: `CURRENT_TIMESTAMP`, onUpdate: `CURRENT_TIMESTAMP` },
-        created:                { dataType: MySQLEnums.DataTypes.TIMESTAMP, nullable: false, default: `CURRENT_TIMESTAMP` },
+        updated:                { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())`, onUpdate: `(UNIX_TIMESTAMP())` },
+        created:                { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())` },
         state:                  { dataType: MySQLEnums.DataTypes.ENUM, values: Object.values(MySQLEnums.States), nullable: false, default: `"${MySQLEnums.States.ACTIVE}"` },
     }
     

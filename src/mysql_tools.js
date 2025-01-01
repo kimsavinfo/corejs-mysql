@@ -356,7 +356,7 @@ export default class MySQLTools {
                 case MySQLEnums.DataTypes.INT_UNSIGNED:
                 case MySQLEnums.DataTypes.BIGINT_UNSIGNED:
                 case MySQLEnums.DataTypes.DOUBLE:
-                case MySQLEnums.DataTypes.TIMESTAMP:
+                case MySQLEnums.DataTypes.UNIX_TIMESTAMP:
                     validator = MySQLEnums.COMPARISON_OPERATORS_NUMBERS;
                     break;
                 case MySQLEnums.DataTypes.BOOLEAN:
