@@ -57,9 +57,34 @@ export default class MySQLTools {
                 output.lines = [];
 
                 if( inputKey === 'count' ) {
+                    /*
+                        inputKey: count
+                        inputValue: 
+                            my_table.my_field
+                            my_field
+                    */
                     const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputValue });
                     const field = this.extractTableField({ table: table, inputString: inputValue });
-                    output.lines.push(`SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`)
+                    output.lines.push(`SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`);
+
+                } else if( inputKey === 'fields_to_retrieve' ) {
+                    /*
+                        inputKey: fields_to_retrieve
+                        inputValue: 
+                            my_field1
+                            my_table.my_field1,my_table.my_field2
+                            my_field1,my_field2
+                    */
+                    let line = "";
+                    const elements = inputValue.split(",");
+                    for( const element of elements ) {
+                        const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: element });
+                        const field = this.extractTableField({ table: table, inputString: element });
+
+                        line = output.lines.length === 0 ? "SELECT " : ", ";
+                        line +=  ` \`${table.label}\`.\`${field}\` AS "${table.label}.${field}" `;
+                        output.lines.push(line);
+                    }
                 }
 
                 break;
