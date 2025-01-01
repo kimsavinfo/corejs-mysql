@@ -124,6 +124,7 @@ export default class MySQLDatabase {
         
         if( result[0].length === 0 ) {
             await this.query({ inquiry: table.getCreateTableQuery() });
+            
         } else {
             const fields = await this.query({ inquiry: 
                 `SELECT COLUMN_NAME, DATA_TYPE 

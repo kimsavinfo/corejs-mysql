@@ -1,17 +1,15 @@
 "use strict";
 
-import MySQLEnums from "../src/mysql_enums.js";
-import MySQLTable from "../src/mysql_table.js";
+import MySQLEnums from "../../src/mysql_enums.js";
+import MySQLTable from "../../src/mysql_table.js";
 
-export default class ProductTable extends MySQLTable {
-    static _label = `product`;
+export default class MerchantTable extends MySQLTable {
+    static _label = `merchant`;
 
     static _schema = {
         id:                     { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, nullable: false, unique: true, autoIncrement: true },
 
-        label:                  { dataType: MySQLEnums.DataTypes.VARCHAR, length: 255, nullable: false, unique: true },
-        description:            { dataType: MySQLEnums.DataTypes.TEXT, nullable: true },
-        price:                  { dataType: MySQLEnums.DataTypes.DOUBLE, default: 0.01 },
+        name:                   { dataType: MySQLEnums.DataTypes.VARCHAR, length: 255, nullable: false, unique: true },
         
         updated:                { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())`, onUpdate: `(UNIX_TIMESTAMP())` },
         created:                { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())` },

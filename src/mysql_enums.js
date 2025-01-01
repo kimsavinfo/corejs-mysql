@@ -58,6 +58,7 @@ export default class MySQLEnums {
         "count",
         "fields_to_retrieve",
         "distinct",
+        "tables_joins"
     ]
     static WHERE_KEYS_BLACKLIST = [
         "from",

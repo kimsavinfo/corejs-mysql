@@ -1,6 +1,6 @@
 import assert from 'assert'
 import MySQLDatabase from '../src/mysql_database.js';
-import ProductTable from './product_table.js';
+import ProductTable from './annexes/product_table.js';
 import ProductBisTable from './productbis_table.js';
 
 describe('TABLES', function () {

@@ -8,7 +8,7 @@ export default class MySQLTable {
     static _schema = {
         id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, nullable: false, unique: true, autoIncrement: true },
         
-        // foreign_id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, nullable: false, linkedTo: "tableName.foreignKey" },
+        // foreign_id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, nullable: false, linkTo: "tableName.foreignKey" },
 
         updated: { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())`, onUpdate: `(UNIX_TIMESTAMP())` },
         created: { dataType: MySQLEnums.DataTypes.UNIX_TIMESTAMP, nullable: false, default: `(UNIX_TIMESTAMP())` },
