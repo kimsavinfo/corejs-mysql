@@ -12,6 +12,7 @@ describe('ROWS', function () {
         } });
 
         const readOutput = await MySQLDatabase.listRows({ table: ProductTable, inputs: {
+            from: ProductTable.label,
             [`and_${ProductTable.primaryKey}_eq`]: rowOutput[ProductTable.primaryKey]
         } })
 

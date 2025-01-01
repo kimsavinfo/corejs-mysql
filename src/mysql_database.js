@@ -3,9 +3,11 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 import mysql from "mysql2/promise";
 
 import MySQLTools from "./mysql_tools.js";
+import MySQLEnums from "./mysql_enums.js";
 
 export default class MySQLDatabase {
     static instance;
+    static #tablesPath = `${process.cwd()}`;
     static #tables = {};
 
     constructor() {
@@ -31,6 +33,10 @@ export default class MySQLDatabase {
             new MySQLDatabase();
         }
         return MySQLDatabase.instance;
+    }
+
+    static setInputPath({ inputPath }) {
+        this.#tablesPath = inputPath;
     }
 
     // #region QUERY
@@ -175,6 +181,7 @@ export default class MySQLDatabase {
     static async createRow({ table, inputs, debug=(process.env.DB_DEBUG==="TRUE") }) {
         let output = { [table.primaryKey]: null };
 
+        await this.loadTables({ lazy:true });
         try {
             const query = table.getCreateRowQuery({ inputs: inputs });
             const valuesToEscape = table.getValuesToEscapte({ inputs: inputs });
@@ -199,29 +206,53 @@ export default class MySQLDatabase {
     static async listRows({ inputs, debug=(process.env.DB_DEBUG==="TRUE") }) {
         let output = [];
 
-        if( Object.keys(this.#tables).length === 0 ) {
-            await this.loadTables();
-        }
-
+        await this.loadTables({ lazy:true });
         if( inputs.from && this.#tables.hasOwnProperty(inputs.from) ) {
             try {
-                let fromQuery = "";
-                let joinsQuery = "";
-                for (const [inputKey, inputValue] of Object.entries(inputs)) {
-                    
-                    if( inputKey === "from" && this.#tables.hasOwnProperty(inputs.from) ) {
-                        fromQuery = `FROM \`${this.#tables[inputs.from].label}\``;
+                let query = "";
+                let valuesToEscape = [];
 
-                    } else if( inputKey === 'tables_joins' ) {
-                        joinsQuery = MySQLTools.getJoinsQuery({ 
-                            defaultTableKey: inputs.from,
-                            tables: this.#tables, 
-                            inputString: inputValue 
-                        });
-                    }
-                    
+                const selectElements = MySQLTools.getSelectElements({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
+                query += selectElements.lines.join("\n");
+                valuesToEscape.push(...selectElements.valuesToEscape);
+
+                query += `\n${MySQLTools.getFromString({ defaultTableKey: inputs.from, tables: this.#tables })}`;
+
+                if( inputs.hasOwnProperty("tables_joins") ) {
+                    const joinsLines = MySQLTools.getJoinsLines({ 
+                        defaultTableKey: inputs.from, tables: this.#tables, 
+                        inputString: inputs["tables_joins"]
+                    });
+                    query += `\n${joinsLines.join("\n")}`;
                 }
-                let query = ``;
+
+                let whereString = "";
+                let whereElements;
+                for (const [inputKey, inputValue] of Object.entries(inputs)) {
+                    if( !MySQLEnums.WHERE_KEYS_BLACKLIST.includes(inputKey) ) {
+                        whereElements = MySQLTools.getWhereElements({ defaultTableKey: inputs.from, tables: this.#tables, 
+                            inputString: inputKey,
+                            inputValue: inputValue
+                        });
+
+                        const isFirstCondition = whereString.length === 0;
+                        if( isFirstCondition ) {
+                            whereString = "WHERE";
+                        }
+                        whereString += `\n\t`;
+                        if(!isFirstCondition) {
+                            whereString += ` ${whereElements.logicalOperator}`;
+                        }
+                        whereString += ` \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator} ? `
+                        valuesToEscape.push(whereElements.valueToEscape);
+                    }
+                }
+                query += `\n${whereString}`;
+                
+                // let sortQuery = "";
+                // let groupQuery = "";
+                // let skipQuery = 0;
+                // let limitQuery = 20;
 
                 const result = await MySQLDatabase.query({ inquiry: query, valuesToEscape: valuesToEscape, debug: debug })
                 output = result[0];
@@ -235,20 +266,24 @@ export default class MySQLDatabase {
         return output;
     }
 
-    static async loadTables({ inputPath=`${process.cwd()}` }) {
-        this.#tables = {};
+    static async loadTables({ lazy=true }) {
+        if(!lazy) {
+            this.#tables = {};
+        }
 
-        const tablesFilesPaths = MySQLTools.getTablesFilesPaths({ inputPath: inputPath });
-        for(const tableFilePath of tablesFilesPaths) {
-            try {
-                const table = (await import(tableFilePath)).default;
-                if( table.label?.length > 0 ) {
-                    this.#tables[table.label] = table;
-                    console.log(`DATABASE TABLE ${table.label} loaded`);
+        if( Object.keys(this.#tables).length === 0 ) {
+            const tablesFilesPaths = MySQLTools.getTablesFilesPaths({ inputPath: this.#tablesPath });
+            for(const tableFilePath of tablesFilesPaths) {
+                try {
+                    const table = (await import(tableFilePath)).default;
+                    if( table.label?.length > 0 ) {
+                        this.#tables[table.label] = table;
+                        console.log(`DATABASE TABLE ${table.label} loaded`);
+                    }
+
+                } catch(error) {
+                    console.error(`DATABASE LOAD TABLE ${table.label}`, error);
                 }
-
-            } catch(error) {
-                console.error(`DATABASE LOAD TABLE ${table.label}`, error);
             }
         }
     }

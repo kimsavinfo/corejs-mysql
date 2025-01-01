@@ -1,3 +1,5 @@
+"use strict";
+
 export default class MySQLEnums {
     //  Name                                                Storage (Bytes)     Minimum Value    	Maximum Value
     static DataTypes = {
@@ -47,57 +49,9 @@ export default class MySQLEnums {
         ARCHIVED: "archived",
         DELETED: "deleted"
     };
-    
-    static DEFAULT_SUCCESS_MESSAGE = "Operation completed successfully!";
+
     static DEFAULT_ERROR_MESSAGE = "Sorry, something went wrong. Please contact the admins.";
     static DEFAULT_TOKEN_EXPIRED_MESSAGE = "Token has expired.";
     static DEFAULT_UNAUTHORISED_MESSAGE = "You are unauthorised to do this.";
     static DEFAULT_MISSING_FIELDS = "Some fields are missing. Please check the documentation.";
-
-    static SPECIAL_SELECT_KEYS = [
-        "count",
-        "fields_to_retrieve",
-        "distinct",
-    ]
-    static WHERE_KEYS_BLACKLIST = [
-        "from",
-        "count",
-        "fields_to_retrieve",
-        "distinct",
-        "tables_joins",
-        "group_by",
-        "sort",
-        "elements_per_page",
-        "page",
-    ];
-    static LOGICAL_OPERATORS = [
-        "and",
-        "or", // ex: or_label_like: '%lorem%#%ipsum%'
-    ];
-    static COMPARISON_OPERATORS_TEXT = [
-        "like",
-        "nlike",
-        // "eq",
-        // "ne",
-        "in", // ex: and_label_in: 'lorem,ipsum'
-        "nin"
-    ];
-    static COMPARISON_OPERATORS_NUMBERS = [
-        "eq",
-        "gt",
-        "gte",
-        "lt",
-        "lte",
-        "ne",
-        "in",
-        "nin"
-    ];
-    static COMPARISON_OPERATORS_BOOLEAN = [
-        "eq",
-        "ne"
-    ];
-    static SORT_DIRECTIONS = [
-        "ASC",
-        "DESC"
-    ]
 }
