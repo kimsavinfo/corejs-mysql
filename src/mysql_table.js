@@ -155,7 +155,7 @@ export default class MySQLTable {
         }
 
         let query = `UPDATE ${this._label}`;
-        query += `\nSET\n\t${ fields.join("\n\t") }`;
+        query += `\nSET\n\t${ fields.join(",\n\t") }`;
 
         const comparator = MySQLEnums.Numerics.includes(this._schema[this._primaryKey].dataType) ? "=" : "LIKE";
         query += `\nWHERE \`${this._label}\`.\`${this._primaryKey}\` ${comparator} ?`;

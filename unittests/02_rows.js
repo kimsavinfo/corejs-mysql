@@ -1,6 +1,7 @@
 import assert from 'assert'
 import MySQLDatabase from '../src/mysql_database.js';
 import ProductTable from './product_table.js';
+import MySQLEnums from '../src/mysql_enums.js';
 
 describe('ROWS', function () {
     const DUMMIES_COUNT = 10
@@ -109,6 +110,19 @@ describe('ROWS', function () {
         );
     })
 
-    // TODO: GROUP BY
-    // TODO: DISTINCT
+    it('Delete with select DISTINCT', async function () {
+        await MySQLDatabase.deleteRow({ table: ProductTable, primaryValue: 1});
+
+        const rows = await MySQLDatabase.listRows({ inputs: {
+            from: ProductTable.label,
+            distinct: "state",
+            elements_per_page: Number.MAX_SAFE_INTEGER,
+            sort: "state_ASC"
+        } })
+
+        assert.deepEqual( 
+            rows,
+            [ { state: MySQLEnums.States.ACTIVE }, { state: MySQLEnums.States.DELETED } ]
+        );
+    })
 })

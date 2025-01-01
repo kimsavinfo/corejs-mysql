@@ -83,6 +83,18 @@ export default class MySQLTools {
                         subLines[0] = `SELECT ${subLines[0]}`;
                         output = subLines.join(" ,");
                     }
+
+                } else if( inputKey === 'distinct' ) {
+                    /*
+                        inputKey: distinct
+                        inputValue: 
+                            my_field1
+                            my_table.my_field1,my_table.my_field2
+                            my_field1,my_field2
+                    */
+                    const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputValue });
+                    const field = this.extractTableField({ table: table, inputString: inputValue });
+                    output = `SELECT DISTINCT(\`${table.label}\`.\`${field}\`)`;
                 }
 
                 break;
@@ -415,15 +427,19 @@ export default class MySQLTools {
 
     static isDefaultSortCase({ inputs }) {
         return !inputs.hasOwnProperty("sort")
-            && !inputs.hasOwnProperty("fields_to_retrieve")
             && !inputs.hasOwnProperty("tables_joins")
+
+            && !inputs.hasOwnProperty("fields_to_retrieve")
             && !inputs.hasOwnProperty("count")
+            && !inputs.hasOwnProperty("distinct")
     }
 
     static isDefaultGroupCase({ inputs }) {
         return !inputs.hasOwnProperty("group_by")
-            && !inputs.hasOwnProperty("fields_to_retrieve")
             && !inputs.hasOwnProperty("tables_joins")
+            
+            && !inputs.hasOwnProperty("fields_to_retrieve")
             && !inputs.hasOwnProperty("count")
+            && !inputs.hasOwnProperty("distinct")
     }
 }

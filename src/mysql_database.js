@@ -361,5 +361,16 @@ export default class MySQLDatabase {
         return output;
     }
 
+    /*
+        inputs
+            table: { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
+            primaryValue: 1
+    */
+    static async deleteRow({ table, primaryValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
+        return await this.updateRow({ table: table, primaryValue: primaryValue, inputs: {
+            state: MySQLEnums.States.DELETED
+        }, debug: debug })
+    }
+
     // #endregion ROWS CRUD
 }
