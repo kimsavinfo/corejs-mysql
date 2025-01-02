@@ -158,4 +158,8 @@ describe('ROWS', function () {
             [ { state: MySQLEnums.States.ACTIVE }, { state: MySQLEnums.States.DELETED } ]
         );
     })
+
+    // TODO count and group by
+
+    // TODO keywords label in
 })
