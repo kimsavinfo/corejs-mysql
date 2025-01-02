@@ -5,6 +5,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 export default class MySQLLogger {
     static instance;
     static #outputDirPath = `${process.cwd()}${process.env.DB_LOGS_DIR_PATH_RELATIVE}`;
+    static #maxFileSize = parseInt(process.env.DB_LOGS_MAX_SIZE_BYTES);
     static #rootName = this.#getRootName();
     static #fileIndex = 0;
 
@@ -41,7 +42,7 @@ export default class MySQLLogger {
         let pathToTest = `${filePath}_${this.#fileIndex}.log`;
         if( fs.existsSync( pathToTest ) ) {
             const stats = fs.statSync(pathToTest);
-            if(stats.size > process.env.DB_LOGS_MAX_SIZE_BYTES) {
+            if(stats.size > this.#maxFileSize) {
                 ++this.#fileIndex;
             }
         }
