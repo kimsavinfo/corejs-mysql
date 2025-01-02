@@ -47,7 +47,7 @@ export default class MySQLTools {
     // ====================================================
 
     static getSelectString({ defaultTableKey, tables, inputs }) {
-        let output = "SELECT *";
+        let selectElements = [];
 
         if( inputs.hasOwnProperty("count") ) {
             /*
@@ -58,30 +58,9 @@ export default class MySQLTools {
             */
             const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputs["count"] });
             const field = this.extractTableField({ table: table, inputString: inputs["count"] });
-            output = `SELECT COUNT(\`${table.label}\`.\`${field}\`) AS count`;
-
-        } else if( inputs.hasOwnProperty("fields_to_retrieve") ) {
-            /*
-                inputKey: fields_to_retrieve
-                inputValue: 
-                    my_field1
-                    my_table.my_field1,my_table.my_field2
-                    my_field1,my_field2
-            */
-            let subLines = [];
-            const elements = inputs["fields_to_retrieve"].split(",");
-            for( const element of elements ) {
-                const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: element });
-                const field = this.extractTableField({ table: table, inputString: element });
-                
-                subLines.push(`\`${table.label}\`.\`${field}\` AS "${table.label}.${field}"`);
-            }
-            if( subLines.length > 0 ) {
-                subLines[0] = `SELECT ${subLines[0]}`;
-                output = subLines.join(" ,");
-            }
-
-        }  else if( inputs.hasOwnProperty("distinct") ) {
+            selectElements.push(` COUNT(\`${table.label}\`.\`${field}\`) AS count `);
+        }
+        if( inputs.hasOwnProperty("distinct") ) {
             /*
                 inputKey: distinct
                 inputValue: 
@@ -91,29 +70,53 @@ export default class MySQLTools {
             */
             const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputs["distinct"] });
             const field = this.extractTableField({ table: table, inputString: inputs["distinct"] });
-            output = `SELECT DISTINCT(\`${table.label}\`.\`${field}\`)`;
-
-        } else if( inputs.hasOwnProperty("tables_joins") ) {
-            let tablesToSelect = {};
-            const tablesLinks = inputs["tables_joins"].split(",");
-            for(const tableLink of tablesLinks) {
-                const links = tableLink.split('-');
-                const leftTable = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: links[0] });
-                const rightTable = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: links[1] });
-                tablesToSelect[leftTable.label] = leftTable;
-                tablesToSelect[rightTable.label] = rightTable;
-            }
-
-            let fields = [];
-            for(const table of Object.values(tablesToSelect)) {
-                for( const field of Object.keys(table.schema) ) {
-                    fields.push(`\`${table.label}\`.\`${field}\` as "${table.label}.${field}"`);
-                }
-            }
-            output = `SELECT ${fields.join(", ")}`;
+            selectElements.push(` DISTINCT(\`${table.label}\`.\`${field}\`) `);
         }
+        if( inputs.hasOwnProperty("fields_to_retrieve") ) {
+            /*
+                inputKey: fields_to_retrieve
+                inputValue: 
+                    my_field1
+                    my_table.my_field1,my_table.my_field2
+                    my_field1,my_field2
+            */
+            const elements = inputs["fields_to_retrieve"].split(",");
+            for( const element of elements ) {
+                const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: element });
+                const field = this.extractTableField({ table: table, inputString: element });
+                
+                selectElements.push(` \`${table.label}\`.\`${field}\` AS "${table.label}.${field}" `);
+            }
+        } 
+        
+        if( selectElements.length === 0 ) {
+            if( inputs.hasOwnProperty("tables_joins") ) {
+                let tablesToSelect = {};
+                const tablesLinks = inputs["tables_joins"].split(",");
+                for(const tableLink of tablesLinks) {
+                    const links = tableLink.split('-');
+                    const leftTable = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: links[0] });
+                    const rightTable = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: links[1] });
+                    tablesToSelect[leftTable.label] = leftTable;
+                    tablesToSelect[rightTable.label] = rightTable;
+                }
+    
+                let fields = [];
+                for(const table of Object.values(tablesToSelect)) {
+                    for( const field of Object.keys(table.schema) ) {
+                        fields.push(`\`${table.label}\`.\`${field}\` as "${table.label}.${field}"`);
+                    }
+                }
+                selectElements.push(` ${fields.join(", ")} `);
 
-        return output;
+            } else {
+                // Default case
+                selectElements.push(" * ");
+            }
+        }
+        
+        selectElements[0] = `SELECT ${selectElements[0]}`;
+        return selectElements.join(" ,");
     }
 
     static getFromString({ defaultTableKey, tables }) {
@@ -173,6 +176,7 @@ export default class MySQLTools {
             output.valueToEscape = inputValue;
         }
 
+        // let output = "SELECT *";
         return output;
     }
 

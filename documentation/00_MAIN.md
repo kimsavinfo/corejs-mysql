@@ -150,15 +150,15 @@ const count = await MySQLDatabase.countRows({ inputs: {
 
 const count = await MySQLDatabase.countRows({ inputs: {
     from: ProductTable.label,
-    count: ProductTable.primaryKey
+    count: ProductTable.primaryKey,
     and_price_lte: 100
 } })
 // This return the number of rows in the "product" table with their price less than and equals to 100
 
-const count = await MySQLDatabase.countRows({ inputs: {
+const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
-    count: ProductTable.primaryKey
-    fields_to_retrieve: "state"
+    count: ProductTable.primaryKey,
+    fields_to_retrieve: "state",
     group_by: "state"
 } })
 // This return the number of rows in the "product" table by state
@@ -181,14 +181,14 @@ rows = [
 
 const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
-    and_label_like: "%lorem%"
+    and_label_like: "%lorem%",
     and_price_gt: 50
 } });
 // This retrieves the rows from the "product" table with the keywords "lorem" in its label AND a price above 50.
 
 const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
-    or_label_like: "%lorem%"
+    or_label_like: "%lorem%",
     or_price_lt: 50
 } });
 // This retrieves the rows from the "product" table with the keywords "lorem" in its label OR a price under 50.
@@ -240,7 +240,7 @@ const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
     tables_joins: `${ProductTable.label}.merchant_id-${MerchantTable.label}.${MerchantTable.primaryKey}`,
     and_price_lt: 50,
-    sort: "price_ASC"
+    sort: "price_ASC",
     fields_to_retrieve: `${ProductTable.label}.id,${ProductTable.label}.label,${MerchantTable.label}.name`
 } });
 // This list the rows from "product" and "merchant" tables, with a price bellow 50 and from the lowest to hight price. Only the id and label fields with merchant name are retrieved.

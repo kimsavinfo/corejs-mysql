@@ -159,7 +159,20 @@ describe('ROWS', function () {
         );
     })
 
-    // TODO count and group by
+    it('Count, fields_to_retrieve and group', async function () {
+        const rows = await MySQLDatabase.listRows({ inputs: {
+            from: ProductTable.label,
+            count: ProductTable.primaryKey,
+            fields_to_retrieve: "state",
+            group_by: "state"
+        } })
+
+        assert.deepEqual( 
+            rows ,
+            [ { count: 10, ["product.state"]: MySQLEnums.States.ACTIVE }, { count: 1, ["product.state"]: MySQLEnums.States.DELETED } ]
+        );
+    })
+    
 
     // TODO keywords label in
 })
