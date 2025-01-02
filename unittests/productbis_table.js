@@ -1,5 +1,3 @@
-"use strict";
-
 import MySQLEnums from "../src/mysql_enums.js";
 import MySQLTable from "../src/mysql_table.js";
 
