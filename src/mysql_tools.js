@@ -115,8 +115,7 @@ export default class MySQLTools {
             }
         }
         
-        selectElements[0] = `SELECT ${selectElements[0]}`;
-        return selectElements.join(" ,");
+        return `SELECT ${selectElements.join(" ,")}`;
     }
 
     static getFromString({ defaultTableKey, tables }) {
@@ -150,8 +149,10 @@ export default class MySQLTools {
     /*
         inputString:
             and_id_eq
+            and_label_in
         inputValue:
             1
+            "%lorem%,%ipsum%"
     */
     static getWhereElements({ defaultTableKey, tables, inputString, inputValue }) {
         let output = {
@@ -247,8 +248,7 @@ export default class MySQLTools {
                     orderByArray.push(`\`${table.label}\`.\`${field}\` ${direction}`)
                 }
                 if(orderByArray.length > 0) {
-                    orderByArray[0] = `ORDER BY ${orderByArray[0]}`;
-                    output += orderByArray.join(" , ");
+                    output += `ORDER BY ${orderByArray.join(" , ")}`;
                 }
             }
         }

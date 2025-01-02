@@ -195,9 +195,9 @@ const rows = await MySQLDatabase.listRows({ inputs: {
 
 const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
-    and_label_in: "%lorem%,%ipsum%"
+    and_id_in: "1,4"
 } });
-// This retrieves the rows from the "product" table with the keywords "lorem" and "ipsum"
+// This retrieves the rows from the "product" table with the id 1 or 4.
 ```
 
 #### Fields to retrieve

@@ -174,5 +174,15 @@ describe('ROWS', function () {
     })
     
 
-    // TODO keywords label in
+    it('Ids in', async function () {
+        const rows = await MySQLDatabase.listRows({ inputs: {
+            from: ProductTable.label,
+            and_id_in: "1,4",
+        } });
+
+        assert.deepEqual( 
+            [ rows[0].id, rows[1].id ] ,
+            [ 1, 4 ]
+        );
+    })
 })

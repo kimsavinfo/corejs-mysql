@@ -293,33 +293,36 @@ export default class MySQLDatabase {
                     query += `\n${joinsLines.join("\n")}`;
                 }
 
-                let whereString = "";
-                let whereElements;
+                let whereLines = [];
                 for (const [inputKey, inputValue] of Object.entries(inputs)) {
                     if( !MySQLEnums.WHERE_KEYS_BLACKLIST.includes(inputKey) ) {
-                        whereElements = MySQLTools.getWhereElements({ defaultTableKey: inputs.from, tables: this.#tables, 
+                        const whereElements = MySQLTools.getWhereElements({ defaultTableKey: inputs.from, tables: this.#tables, 
                             inputString: inputKey,
                             inputValue: inputValue
                         });
 
-                        const isFirstCondition = whereString.length === 0;
-                        if( isFirstCondition ) {
-                            whereString = "WHERE";
-                        }
-                        whereString += `\n\t`;
-                        if(!isFirstCondition) {
-                            whereString += ` ${whereElements.logicalOperator}`;
-                        }
-                        whereString += ` \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator}`;
+                        let whereLine = `${whereLines.length > 0 ? whereElements.logicalOperator : ""} \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator}`;
+                        if( whereElements.comparisonOperator.toLowerCase() === "in" || whereElements.comparisonOperator.toLowerCase() === "nin" ) {
+                            whereLine += ` ( `;
+                            
+                            const subValsEsc = whereElements.valueToEscape.split(',');
+                            let questionMarksArray = [];
+                            for( let iSubValEsc = 0 ; iSubValEsc < subValsEsc.length ; ++iSubValEsc ) {
+                                questionMarksArray.push('?');
+                                valuesToEscape.push( subValsEsc[iSubValEsc] );
+                            }
+                            whereLine += questionMarksArray.join(", ");
 
-                        if( whereElements.valueToEscape ) {
-                            whereString += ` ? `;
+                            whereLine += ` ) `;
+                        } else if( whereElements.valueToEscape ) {
+                            whereLine += ` ?`;
                             valuesToEscape.push(whereElements.valueToEscape);
                         }
+                        whereLines.push(whereLine);
                     }
                 }
-                if( whereString.length > 0 ) {
-                    query += `\n${whereString}`;
+                if( whereLines.length > 0 ) {
+                    query += `\nWHERE ${whereLines.join(",\n\t")}`;
                 }
 
                 const groupString = MySQLTools.getGroupString({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });
