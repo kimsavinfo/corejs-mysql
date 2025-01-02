@@ -10,7 +10,7 @@ export default class MySQLLogger {
     static #fileIndex = 0;
 
     static #getRootName() {
-        const today = new Date();
+        const today   = new Date();
         const year    = today.getUTCFullYear();
         const month   = (today.getUTCMonth() + 1).toString().padStart(2,"0");
         const day     = (today.getUTCDate()).toString().padStart(2,"0");
@@ -18,7 +18,7 @@ export default class MySQLLogger {
     }
 
     static #getDate() {
-        const now = new Date();
+        const now           = new Date();
         const year          = now.getUTCFullYear();
         const month         = (now.getUTCMonth() + 1).toString().padStart(2,"0");
         const day           = (now.getUTCDate()).toString().padStart(2,"0");
