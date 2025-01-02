@@ -207,7 +207,7 @@ export default class MySQLDatabase {
                     }
 
                 } catch(error) {
-                    console.error(`DATABASE LOAD TABLE ${table.label}`, error);
+                    console.error(`DATABASE LOAD TABLE ${table?.label} (${tableFilePath})`, error);
                 }
             }
         }

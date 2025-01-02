@@ -2,7 +2,8 @@
     "name": "corejs-mysql",
     "version": "1.0.0",
     "scripts": {
-        "test": "NODE_ENV=development mocha unittests --bail --exit"
+        "test": "NODE_ENV=development mocha unittests --bail --exit",
+        "doc": "NODE_ENV=development node ./documentation/generate_doc_schemas.js"
     },
     "dependencies": {
         "dotenv": "^16.4.7",
