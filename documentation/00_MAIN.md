@@ -12,6 +12,29 @@ The label property is a string that represents the exact name of the table in th
 
 The schema is an object that defines the structure of the data in the table. Each key in the schema corresponds to a column name in the table, and its value specifies the data type or validation rules for that column.
 
+#### Available tags
+
+| DataTypes | SQL equivalent |
+| :-: | :-: |
+| TINYINT | TINYINT |
+| SMALLINT | SMALLINT |
+| MEDIUMINT | MEDIUMINT |
+| INT | INT |
+| BIGINT | BIGINT |
+| TINYINT_UNSIGNED | TINYINT UNSIGNED |
+| SMALLINT_UNSIGNED | SMALLINT UNSIGNED |
+| MEDIUMINT_UNSIGNED | MEDIUMINT UNSIGNED |
+| INT_UNSIGNED | INT UNSIGNED |
+| BIGINT_UNSIGNED | BIGINT UNSIGNED |
+| DOUBLE | DOUBLE |
+| UNIX_TIMESTAMP | BIGINT UNSIGNED |
+| ENUM | ENUM |
+| VARCHAR | VARCHAR |
+| TEXT | TEXT |
+| MEDIUMTEXT | MEDIUMTEXT |
+| LONGTEXT | LONGTEXT |
+| BOOLEAN | BOOLEAN |
+
 ### Primary Key
 
 The primaryKey property identifies the column in the schema that serves as the primary key for the table. This field uniquely identifies each record in the table.
@@ -86,6 +109,7 @@ export default class ProductTable extends MySQLTable {
     static _primaryKey = "id";
 }
 ```
+ 
 
 ## Query system
 
@@ -109,6 +133,34 @@ console.log(rows) // This retrieves the first 20 rows from the "product" table, 
 The function is highly customisable while maintaining a straightforward default behaviour, ensuring ease of use for developers. It is designed for seamless integration with APIs and supports manipulation of strings and numbers only.
 
 By adhering to these guidelines, developers can efficiently query the database while maintaining consistency and avoiding unnecessary complexity.
+
+### Where: available tags
+
+Filter conditions follow the template: 
+```
+inputs: {
+    logicalOperator_tableField_comparisonOperator: valueForFilter
+    logicalOperator_tableLabel.tableField_comparisonOperator: valueForFilter
+}
+```
+
+| Logical operators |
+| :-: |
+| and |
+| or |
+
+| Comparison operators | Data type |
+| :-: | :-: |
+| like | text |
+| nlike | text |
+| in | text, number |
+| nin | text, number |
+| eq | number, boolean |
+| ne | number, boolean |
+| gt | number |
+| gte | number |
+| lt | number |
+| lte | number |
 
 ### List: examples
 
@@ -146,14 +198,14 @@ const count = await MySQLDatabase.countRows({ inputs: {
     from: ProductTable.label,
     count: ProductTable.primaryKey
 } })
-// This return the total number of rows in the "product" table
+// This returns the total number of rows in the "product" table
 
 const count = await MySQLDatabase.countRows({ inputs: {
     from: ProductTable.label,
     count: ProductTable.primaryKey,
     and_price_lte: 100
 } })
-// This return the number of rows in the "product" table with their price less than and equals to 100
+// This returns the number of rows in the "product" table with their price less than and equals to 100
 
 const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
@@ -161,7 +213,7 @@ const rows = await MySQLDatabase.listRows({ inputs: {
     fields_to_retrieve: "state",
     group_by: "state"
 } })
-// This return the number of rows in the "product" table by state
+// This returns the number of rows in the "product" table by state
 ```
 
 #### Filter and In
@@ -224,7 +276,7 @@ const rows = await MySQLDatabase.listRows({ inputs: {
     elements_per_page: Number.MAX_SAFE_INTEGER,
     sort: "state_ASC"
 } })
-// This list all the distinct states present in "product" table by alphabetic order.
+// This lists all the distinct states present in "product" table by alphabetic order.
 ```
 
 #### Inner join
@@ -234,7 +286,7 @@ const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
     tables_joins: `${ProductTable.label}.merchant_id-${MerchantTable.label}.${MerchantTable.primaryKey}`,
 } });
-// This list the rows from "product" table with the "merchant" data
+// This lists the rows from "product" table with the "merchant" data
 
 const rows = await MySQLDatabase.listRows({ inputs: {
     from: ProductTable.label,
@@ -243,52 +295,23 @@ const rows = await MySQLDatabase.listRows({ inputs: {
     sort: "price_ASC",
     fields_to_retrieve: `${ProductTable.label}.id,${ProductTable.label}.label,${MerchantTable.label}.name`
 } });
-// This list the rows from "product" and "merchant" tables, with a price bellow 50 and from the lowest to hight price. Only the id and label fields with merchant name are retrieved.
+// This lists the rows from "product" and "merchant" tables, with a price bellow 50 and from the lowest to hight price. Only the id and label fields with merchant name are retrieved.
 ```
 
-## Available tags
+#### Same field multiple values
 
-### Schema
+```
+const count = await MySQLDatabase.countRows({ inputs: {
+    from: ProductTable.label,
+    count: ProductTable.primaryKey,
+    or_label_like: "%lorem%,%product%",
+} });
+// This counts the rows from "product" table, with a label including the keywords "lorem" OR "product"
 
-| DataTypes | SQL equivalent |
-| :-: | :-: |
-| TINYINT | TINYINT |
-| SMALLINT | SMALLINT |
-| MEDIUMINT | MEDIUMINT |
-| INT | INT |
-| BIGINT | BIGINT |
-| TINYINT_UNSIGNED | TINYINT UNSIGNED |
-| SMALLINT_UNSIGNED | SMALLINT UNSIGNED |
-| MEDIUMINT_UNSIGNED | MEDIUMINT UNSIGNED |
-| INT_UNSIGNED | INT UNSIGNED |
-| BIGINT_UNSIGNED | BIGINT UNSIGNED |
-| DOUBLE | DOUBLE |
-| UNIX_TIMESTAMP | BIGINT UNSIGNED |
-| ENUM | ENUM |
-| VARCHAR | VARCHAR |
-| TEXT | TEXT |
-| MEDIUMTEXT | MEDIUMTEXT |
-| LONGTEXT | LONGTEXT |
-| BOOLEAN | BOOLEAN |
- 
-### Select / List
-
-### Where
-
-| Logical operators |
-| :-: |
-| and |
-| or |
-
-| Comparison operators | Data type |
-| :-: | :-: |
-| like | text |
-| nlike | text |
-| in | text, number |
-| nin | text, number |
-| eq | number, boolean |
-| ne | number, boolean |
-| gt | number |
-| gte | number |
-| lt | number |
-| lte | number |
+const count = await MySQLDatabase.countRows({ inputs: {
+    from: ProductTable.label,
+    count: ProductTable.primaryKey,
+    and_label_like: "%lorem%,%product%",
+} });
+// This counts the rows from "product" table, with a label including the keywords "lorem" AND "product"
+```

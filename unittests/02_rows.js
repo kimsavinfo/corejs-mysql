@@ -185,4 +185,23 @@ describe('ROWS', function () {
             [ 1, 4 ]
         );
     })
+
+    it('Same field multiple values', async function () {
+        const countOr = await MySQLDatabase.countRows({ inputs: {
+            from: ProductTable.label,
+            count: ProductTable.primaryKey,
+            or_label_like: "%lorem%,%product%",
+        } });
+
+        const countAnd = await MySQLDatabase.countRows({ inputs: {
+            from: ProductTable.label,
+            count: ProductTable.primaryKey,
+            and_label_like: "%lorem%,%product%",
+        } });
+        
+        assert.deepEqual(
+            [ countOr, countAnd ] ,
+            [ DUMMIES_COUNT+1, 0 ]
+        );
+    })
 })

@@ -301,28 +301,36 @@ export default class MySQLDatabase {
                             inputValue: inputValue
                         });
 
-                        let whereLine = `${whereLines.length > 0 ? whereElements.logicalOperator : ""} \`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator}`;
-                        if( whereElements.comparisonOperator.toLowerCase() === "in" || whereElements.comparisonOperator.toLowerCase() === "nin" ) {
-                            whereLine += ` ( `;
-                            
-                            const subValsEsc = whereElements.valueToEscape.split(',');
-                            let questionMarksArray = [];
-                            for( let iSubValEsc = 0 ; iSubValEsc < subValsEsc.length ; ++iSubValEsc ) {
-                                questionMarksArray.push('?');
-                                valuesToEscape.push( subValsEsc[iSubValEsc] );
-                            }
-                            whereLine += questionMarksArray.join(", ");
+                        let whereLine = `\`${whereElements.table}\`.\`${whereElements.field}\` ${whereElements.comparisonOperator}`;
+                        if( whereElements.valueToEscape.length === 0 ) {
+                            // isnull and isnotnull case
+                            whereLines.push(`${whereLines.length === 0 ? "" : whereElements.logicalOperator} ${whereLine}`);
 
-                            whereLine += ` ) `;
-                        } else if( whereElements.valueToEscape ) {
-                            whereLine += ` ?`;
-                            valuesToEscape.push(whereElements.valueToEscape);
+                        } else {
+                            if( whereElements.comparisonOperator.toLowerCase() === "in" || whereElements.comparisonOperator.toLowerCase() === "nin" ) {
+                                whereLine += ` ( `;
+                                let questionMarksArray = [];
+                                for( let iSubValEsc = 0 ; iSubValEsc < whereElements.valueToEscape.length ; ++iSubValEsc ) {
+                                    questionMarksArray.push('?');
+                                    valuesToEscape.push( whereElements.valueToEscape[iSubValEsc] );
+                                }
+                                whereLine += questionMarksArray.join(", ");
+                                whereLine += ` ) `;
+
+                                whereLines.push(`${whereLines.length === 0 ? "" : whereElements.logicalOperator} ${whereLine}`);
+
+                            } else {
+                                // Default case
+                                for( let iSubValEsc = 0 ; iSubValEsc < whereElements.valueToEscape.length ; ++iSubValEsc ) {
+                                    whereLines.push(`${whereLines.length === 0 ? "" : whereElements.logicalOperator} ${whereLine} ? `);
+                                    valuesToEscape.push( whereElements.valueToEscape[iSubValEsc] );
+                                }
+                            }
                         }
-                        whereLines.push(whereLine);
                     }
                 }
                 if( whereLines.length > 0 ) {
-                    query += `\nWHERE ${whereLines.join(",\n\t")}`;
+                    query += `\nWHERE ${whereLines.join("\n\t")}`;
                 }
 
                 const groupString = MySQLTools.getGroupString({ defaultTableKey: inputs.from, tables: this.#tables, inputs: inputs });

@@ -160,7 +160,7 @@ export default class MySQLTools {
             field: "",
             logicalOperator: "",
             comparisonOperator: "",
-            valueToEscape: null,
+            valueToEscape: [],
         };
 
         const table = this.extractTable({ defaultTableKey: defaultTableKey, tables: tables, inputString: inputString });
@@ -174,7 +174,11 @@ export default class MySQLTools {
         } else if( typeof inputValue === 'string' && inputValue.toLowerCase() === "isnotnull" ) {
             output.comparisonOperator = "IS NOT NULL";
         } else {
-            output.valueToEscape = inputValue;
+            if( typeof inputValue === 'string' ) {
+                output.valueToEscape = inputValue.split(",");
+            } else {
+                output.valueToEscape.push(inputValue);
+            }
         }
 
         // let output = "SELECT *";
