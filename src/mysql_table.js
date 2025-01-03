@@ -74,12 +74,12 @@ export default class MySQLTable {
         }
 
         if( settings.hasOwnProperty("default") 
-            && settings.dataType !== MySQLEnums.DataTypes.UNIX_TIMESTAMP // (UNIX_TIMESTAMP()) Not available on 5.7
+            && settings.default !== "(UNIX_TIMESTAMP())" // (UNIX_TIMESTAMP()) Not available on 5.7
         ) {
             output += ` DEFAULT ${settings.default}`;
         }
         if( settings.hasOwnProperty("onUpdate") 
-            && settings.dataType !== MySQLEnums.DataTypes.UNIX_TIMESTAMP // (UNIX_TIMESTAMP()) Not available on 5.7
+            && settings.onUpdate !== "(UNIX_TIMESTAMP())" // (UNIX_TIMESTAMP()) Not available on 5.7
         ) {
             output += ` ON UPDATE ${settings.onUpdate}`;
         }

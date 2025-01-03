@@ -44,15 +44,20 @@ export default class MySQLDatabase {
     // #region QUERY
 
     static async query({ inquiry, valuesToEscape=[] }) {
-        
-
         let output = null;
+
         try {
+            if(process.env.DB_DEBUG === "TRUE") {
+                console.log(inquiry, valuesToEscape)
+            }
+
             const instance = MySQLDatabase.getInstance();
             const result = await instance.pool.query(inquiry, valuesToEscape);
             output = JSON.parse(JSON.stringify(result));
 
-            await this.#logQuery({ inquiry: inquiry, valuesToEscape: valuesToEscape, output: output })
+            if( !inquiry.includes("SELECT") ) {
+                await this.#logQuery({ inquiry: inquiry, valuesToEscape: valuesToEscape, output: output })
+            }
         } catch (error) {
             console.error('DATABASE INQUIRY error:', error);
         }
@@ -243,17 +248,22 @@ export default class MySQLDatabase {
             table: { id: { dataType: MySQLEnums.DataTypes.BIGINT_UNSIGNED, ... }, ... }
             primaryValue: 1
     */
-    static async readRow({ table, primaryValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
+    static async readRow({ table, primaryValue, primaryField="", debug=(process.env.DB_DEBUG==="TRUE") }) {
+        let field = table.primaryKey;
+        if( primaryField.length > 0 && table.schema.hasOwnProperty(primaryField) ) {
+            field = primaryField
+        }
+        const comparison = MySQLEnums.Numerics.includes( table.schema[field].dataType ) ? "eq" : "like";
+
         const rows = await this.listRows({
             inputs: {
                 from: table.label,
-                [`and_${table.primaryKey}_eq`]: primaryValue,
+                [`and_${field}_${comparison}`]: primaryValue,
                 elements_per_page: 1,
                 page: 0,
             },
             debug: debug
         });
-
         return rows.length === 1 ? rows[0] : {};
     }
 
@@ -329,6 +339,7 @@ export default class MySQLDatabase {
                         }
                     }
                 }
+                
                 if( whereLines.length > 0 ) {
                     query += `\nWHERE ${whereLines.join("\n\t")}`;
                 }
@@ -395,10 +406,17 @@ export default class MySQLDatabase {
             primaryValue: 1
     */
     static async deleteRow({ table, primaryValue, debug=(process.env.DB_DEBUG==="TRUE") }) {
+        await this.loadTables({ lazy:true });
         return await this.updateRow({ table: table, primaryValue: primaryValue, inputs: {
             state: MySQLEnums.States.DELETED
         }, debug: debug })
     }
 
     // #endregion ROWS CRUD
+
+    // #region GETTER
+
+    static get tables() { return this.#tables; }
+    
+    // #endregion GETTER
 }

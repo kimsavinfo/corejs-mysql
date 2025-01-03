@@ -181,7 +181,6 @@ export default class MySQLTools {
             }
         }
 
-        // let output = "SELECT *";
         return output;
     }
 
@@ -309,7 +308,7 @@ export default class MySQLTools {
             my_table.my_field
             my_field
             and_my_field_like
-            my_table.and_my_field_like
+            and_my_table.my_field_like
         output:
             my_field
     */
@@ -318,9 +317,14 @@ export default class MySQLTools {
 
         const elements = inputString.split('.');
         const element = elements.length === 1 ? elements[0] : elements[1];
+
         if( element.includes("_") ) {
             let subElements = element.split("_");
-            subElements.shift();
+            
+            if( MySQLEnums.LOGICAL_OPERATORS.includes(subElements[0]) ) {
+                subElements.shift();
+            }
+
             subElements.pop();
             const field = subElements.join("_");
 
